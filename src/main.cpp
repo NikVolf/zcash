@@ -2472,6 +2472,10 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
         view.PopAnchor(SaplingMerkleTree::empty_root(), SAPLING);
     }
 
+    if (chainparams.ZIP220Enabled()) {
+        view.PopHistoryNode();
+    }
+
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
@@ -2732,6 +2736,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // Grab the consensus branch ID for the block's height
     auto consensusBranchId = CurrentEpochBranchId(pindex->nHeight, chainparams.GetConsensus());
 
+    size_t total_shielded_tx = 0;
+
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
     for (unsigned int i = 0; i < block.vtx.size(); i++)
@@ -2850,6 +2856,10 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             sapling_tree.append(outputDescription.cm);
         }
 
+        if (tx.vShieldedOutput.size() > 0) {
+            total_shielded_tx += 1;
+        }
+
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
     }
@@ -2870,6 +2880,23 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                                REJECT_INVALID, "bad-sapling-root-in-block");
         }
     }
+
+    if (chainparams.ZIP220Enabled()) {
+        // grow history with zip220
+        auto historyNode = libzcash::NewLeaf(
+            block.GetHash(), 
+            block.nTime, 
+            block.nBits, 
+            block.hashFinalSaplingRoot,
+            ArithToUint256(pindex->nChainWork),
+            pindex->nHeight,
+            total_shielded_tx
+        );
+
+        view.PushHistoryNode(historyNode);
+    }
+
+    // Once we have 
 
     int64_t nTime1 = GetTimeMicros(); nTimeConnect += nTime1 - nTimeStart;
     LogPrint("bench", "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs]\n", (unsigned)block.vtx.size(), 0.001 * (nTime1 - nTimeStart), 0.001 * (nTime1 - nTimeStart) / block.vtx.size(), nInputs <= 1 ? 0 : 0.001 * (nTime1 - nTimeStart) / (nInputs-1), nTimeConnect * 0.000001);

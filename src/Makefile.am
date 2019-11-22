@@ -92,6 +92,7 @@ LIBZCASH_H = \
   zcash/NoteEncryption.hpp \
   zcash/Address.hpp \
   zcash/JoinSplit.hpp \
+  zcash/MMR.hpp \
   zcash/Note.hpp \
   zcash/prf.h \
   zcash/Proof.hpp \
@@ -510,6 +511,7 @@ libzcash_a_SOURCES = \
   zcash/NoteEncryption.cpp \
   zcash/Address.cpp \
   zcash/JoinSplit.cpp \
+  zcash/MMR.cpp \
   zcash/Proof.cpp \
   zcash/Note.cpp \
   zcash/prf.cpp \

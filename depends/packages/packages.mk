@@ -6,6 +6,7 @@ rust_crates := \
   crate_arrayvec \
   crate_autocfg \
   crate_bech32 \
+  crate_bigint \
   crate_bit_vec \
   crate_blake2b_simd \
   crate_blake2s_simd \
@@ -15,6 +16,7 @@ rust_crates := \
   crate_byte_tools \
   crate_byteorder \
   crate_c2_chacha \
+  crate_cc \
   crate_cfg_if \
   crate_constant_time_eq \
   crate_crossbeam_channel \
@@ -23,6 +25,7 @@ rust_crates := \
   crate_crossbeam_queue \
   crate_crossbeam_utils \
   crate_crossbeam \
+  crate_crunchy \
   crate_crypto_api_chachapoly \
   crate_crypto_api \
   crate_digest \
@@ -46,6 +49,9 @@ rust_crates := \
   crate_opaque_debug \
   crate_ppv_lite86 \
   crate_proc_macro2 \
+  crate_protobuf \
+  crate_protobuf_codegen \
+  crate_protobuf_codegen_pure \
   crate_quote \
   crate_rand_chacha \
   crate_rand_core \
@@ -53,12 +59,15 @@ rust_crates := \
   crate_rand_os \
   crate_rand_xorshift \
   crate_rand \
+  crate_ripemd160 \
   crate_rustc_version \
   crate_scopeguard \
+  crate_secp256k1 \
   crate_semver_parser \
   crate_semver \
   crate_sha2 \
   crate_syn \
+  crate_subtle \
   crate_typenum \
   crate_unicode_xid \
   crate_wasi \

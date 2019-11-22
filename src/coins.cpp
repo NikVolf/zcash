@@ -10,6 +10,7 @@
 #include "policy/fees.h"
 
 #include <assert.h>
+#include "zcash/MMR.hpp"
 
 /**
  * calculate number of bytes for the bitmask, and its number of non-zero bytes
@@ -49,6 +50,10 @@ bool CCoinsView::GetCoins(const uint256 &txid, CCoins &coins) const { return fal
 bool CCoinsView::HaveCoins(const uint256 &txid) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 uint256 CCoinsView::GetBestAnchor(ShieldedType type) const { return uint256(); };
+MMRIndex CCoinsView::GetHistoryLength() const { return 0; }
+SerializedMMRNode CCoinsView::GetHistoryAt(MMRIndex index) const { return SerializedMMRNode(); }
+uint256 CCoinsView::GetHistoryRoot() const { return uint256(); }
+
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins,
                             const uint256 &hashBlock,
                             const uint256 &hashSproutAnchor,
@@ -56,7 +61,8 @@ bool CCoinsView::BatchWrite(CCoinsMap &mapCoins,
                             CAnchorsSproutMap &mapSproutAnchors,
                             CAnchorsSaplingMap &mapSaplingAnchors,
                             CNullifiersMap &mapSproutNullifiers,
-                            CNullifiersMap &mapSaplingNullifiers) { return false; }
+                            CNullifiersMap &mapSaplingNullifiers,
+                            MMRUpdateState &updateMMRState) { return false; }
 bool CCoinsView::GetStats(CCoinsStats &stats) const { return false; }
 
 
@@ -69,6 +75,9 @@ bool CCoinsViewBacked::GetCoins(const uint256 &txid, CCoins &coins) const { retu
 bool CCoinsViewBacked::HaveCoins(const uint256 &txid) const { return base->HaveCoins(txid); }
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 uint256 CCoinsViewBacked::GetBestAnchor(ShieldedType type) const { return base->GetBestAnchor(type); }
+MMRIndex CCoinsViewBacked::GetHistoryLength() const { return base->GetHistoryLength(); }
+SerializedMMRNode CCoinsViewBacked::GetHistoryAt(MMRIndex index) const { return base->GetHistoryAt(index); }
+uint256 CCoinsViewBacked::GetHistoryRoot() const { return base->GetHistoryRoot(); }
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins,
                                   const uint256 &hashBlock,
@@ -77,12 +86,13 @@ bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins,
                                   CAnchorsSproutMap &mapSproutAnchors,
                                   CAnchorsSaplingMap &mapSaplingAnchors,
                                   CNullifiersMap &mapSproutNullifiers,
-                                  CNullifiersMap &mapSaplingNullifiers) { return base->BatchWrite(mapCoins, hashBlock, hashSproutAnchor, hashSaplingAnchor, mapSproutAnchors, mapSaplingAnchors, mapSproutNullifiers, mapSaplingNullifiers); }
+                                  CNullifiersMap &mapSaplingNullifiers,
+                                  MMRUpdateState &updateMMRState) { return base->BatchWrite(mapCoins, hashBlock, hashSproutAnchor, hashSaplingAnchor, mapSproutAnchors, mapSaplingAnchors, mapSproutNullifiers, mapSaplingNullifiers, updateMMRState); }
 bool CCoinsViewBacked::GetStats(CCoinsStats &stats) const { return base->GetStats(stats); }
 
 CCoinsKeyHasher::CCoinsKeyHasher() : salt(GetRandHash()) {}
 
-CCoinsViewCache::CCoinsViewCache(CCoinsView *baseIn) : CCoinsViewBacked(baseIn), hasModifier(false), cachedCoinsUsage(0) { }
+CCoinsViewCache::CCoinsViewCache(CCoinsView *baseIn) : CCoinsViewBacked(baseIn), hasModifier(false), cachedCoinsUsage(0), mmrUpdateState(baseIn->GetHistoryLength()) { }
 
 CCoinsViewCache::~CCoinsViewCache()
 {
@@ -188,6 +198,30 @@ bool CCoinsViewCache::GetNullifier(const uint256 &nullifier, ShieldedType type) 
     return tmp;
 }
 
+MMRIndex CCoinsViewCache::GetHistoryLength() const {
+    return mmrUpdateState.length;
+}
+
+SerializedMMRNode CCoinsViewCache::GetHistoryAt(MMRIndex index) const {
+    if (index >= mmrUpdateState.length) {
+        // TODO: soft error?
+        throw std::runtime_error("Invalid history request");
+    }
+
+    if (index >= mmrUpdateState.updateDepth) {
+        return mmrUpdateState.appends[index];
+    }
+
+    return base->GetHistoryAt(index);
+}
+
+uint256 CCoinsViewCache::GetHistoryRoot() const {
+    if (mmrUpdateState.root == uint256() && mmrUpdateState.length > 0) {
+        mmrUpdateState.root = base->GetHistoryRoot();
+    }
+    return mmrUpdateState.root;
+}
+
 template<typename Tree, typename Cache, typename CacheIterator, typename CacheEntry>
 void CCoinsViewCache::AbstractPushAnchor(
     const Tree &tree,
@@ -258,6 +292,186 @@ void CCoinsViewCache::BringBestAnchorIntoCache(
 )
 {
     assert(GetSaplingAnchorAt(currentRoot, tree));
+}
+
+void draftMMRNode(std::vector<uint32_t> &indices, 
+                  std::vector<SerializedMMREntry> &entries, 
+                  SerializedMMRNode nodeData, 
+                  uint32_t h, 
+                  uint32_t peak_pos) 
+{
+    SerializedMMREntry newEntry = h == 0 ? libzcash::NodeToEntry(nodeData) 
+                                         : libzcash::NewEntry(nodeData, peak_pos - (1 << h) - 1, peak_pos - 2);
+
+    indices.push_back(peak_pos - 1);
+    entries.push_back(newEntry);
+}
+
+int countZeros(uint32_t x) 
+{ 
+    unsigned y; 
+    int n = 32; 
+    y = x >> 16; 
+    if (y != 0) { 
+        n = n - 16; 
+        x = y; 
+    } 
+    y = x >> 8; 
+    if (y != 0) { 
+        n = n - 8; 
+        x = y; 
+    } 
+    y = x >> 4; 
+    if (y != 0) { 
+        n = n - 4; 
+        x = y; 
+    } 
+    y = x >> 2; 
+    if (y != 0) { 
+        n = n - 2; 
+        x = y; 
+    } 
+    y = x >> 1; 
+    if (y != 0) 
+        return n - 2; 
+    return n - x; 
+}
+
+uint32_t CCoinsViewCache::PreloadHistoryTree(bool extra, std::vector<SerializedMMREntry> &entries, std::vector<uint32_t> &entry_indices) {
+    auto treeLength = GetHistoryLength();
+
+    if (treeLength <= 0) {
+        throw std::runtime_error("Invalid PreloadHistoryTree state called - tree should exist");
+    }
+
+    uint32_t last_peak_pos = 0;
+    uint32_t last_peak_h = 0;
+    uint32_t h = 0;
+    uint32_t peak_pos = 0;
+    uint32_t total_peaks = 0;
+
+    if (treeLength == 1) {
+        entries.push_back(libzcash::NodeToEntry(GetHistoryAt(0)));
+        entry_indices.push_back(0);
+        return 1;
+    } else {
+        // integer log2 of (treeLength+1), -1
+        h = (32 - countZeros(treeLength + 1) - 1) - 1;
+        peak_pos = (1 << (h + 1)) - 1;
+
+        for (;h != 0;) {
+            if (peak_pos > treeLength) {
+                // left child, -2^h
+                peak_pos = peak_pos - (1 << h);
+                h = h - 1;
+            }
+
+            if (peak_pos <= treeLength) {
+                draftMMRNode(entry_indices, entries, GetHistoryAt(peak_pos-1), h, peak_pos);
+
+                last_peak_pos = peak_pos;
+                last_peak_h = h;
+
+                // right sibling
+                peak_pos = peak_pos + (1 << (h + 1)) - 1;
+            }
+        }
+    }
+
+    total_peaks = entries.size();
+
+    // early return if we don't extra nodes
+    if (!extra) return total_peaks;
+
+    h = last_peak_h;
+    peak_pos = last_peak_pos;
+
+    while (h > 0) {
+        uint32_t left_pos = peak_pos - (1<<h);
+        uint32_t right_pos = peak_pos - 1;
+        h = h - 1;
+
+        // drafting left child
+        draftMMRNode(entry_indices, entries, GetHistoryAt(left_pos-1), h, left_pos);
+
+        // drafting right child
+        draftMMRNode(entry_indices, entries, GetHistoryAt(right_pos-1), h, right_pos);
+
+        // continuing on right slope
+        peak_pos = right_pos;
+    }    
+
+    return total_peaks;
+}
+
+void CCoinsViewCache::PushHistoryNode(const SerializedMMRNode node) {
+    auto treeLength = GetHistoryLength();
+
+    if (treeLength == 0) {
+        // special case, it just goes into the cache right away
+        mmrUpdateState.Extend(node);
+        return;
+    }
+
+    std::vector<SerializedMMREntry> entries;
+    std::vector<uint32_t> entry_indices;
+
+    PreloadHistoryTree(false, entries, entry_indices);
+   
+    // TODO: pass consensus branch id?
+    uint32_t consensusBranchId = 0;
+
+    uint256 newRoot;
+    std::array<SerializedMMRNode, 32> appendBuf;
+
+    uint32_t appends = librustzcash_mmr_append(
+        consensusBranchId, 
+        treeLength,
+        &entry_indices[0], 
+        entries.begin()->begin(),
+        entry_indices.size(),
+        node.begin(),
+        newRoot.begin(),
+        appendBuf.begin()->begin()
+    );
+    
+    for (size_t i = 0; i < appends; i++) {
+        mmrUpdateState.Extend(appendBuf[i]);
+    }
+
+    mmrUpdateState.root = newRoot;
+}
+
+void CCoinsViewCache::PopHistoryNode() {
+    auto treeLength = GetHistoryLength();
+
+    if (treeLength == 0) {
+        // TODO: not sure if it can happen atm
+        throw std::runtime_error("popping hisory node from empty history");
+    }
+
+    std::vector<SerializedMMREntry> entries;
+    std::vector<uint32_t> entry_indices;
+
+    uint32_t peak_count = PreloadHistoryTree(true, entries, entry_indices);
+
+    // TODO: pass consensus branch id?
+    uint32_t consensusBranchId = 0;
+    uint256 newRoot;
+
+    uint32_t numberOfDeletes = librustzcash_mmr_delete(
+        consensusBranchId, 
+        treeLength,
+        &entry_indices[0], 
+        entries.begin()->begin(),
+        peak_count,
+        entries.size() - peak_count,
+        newRoot.begin()
+    );
+
+    mmrUpdateState.Truncate(mmrUpdateState.length - numberOfDeletes);
+
+    mmrUpdateState.root = newRoot;
 }
 
 template<typename Tree, typename Cache, typename CacheEntry>
@@ -477,7 +691,8 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins,
                                  CAnchorsSproutMap &mapSproutAnchors,
                                  CAnchorsSaplingMap &mapSaplingAnchors,
                                  CNullifiersMap &mapSproutNullifiers,
-                                 CNullifiersMap &mapSaplingNullifiers) {
+                                 CNullifiersMap &mapSaplingNullifiers,
+                                 MMRUpdateState &updateMMRState) {
     assert(!hasModifier);
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) { // Ignore non-dirty entries (optimization).
@@ -527,12 +742,21 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins,
 }
 
 bool CCoinsViewCache::Flush() {
-    bool fOk = base->BatchWrite(cacheCoins, hashBlock, hashSproutAnchor, hashSaplingAnchor, cacheSproutAnchors, cacheSaplingAnchors, cacheSproutNullifiers, cacheSaplingNullifiers);
+    bool fOk = base->BatchWrite(cacheCoins, 
+                                hashBlock, 
+                                hashSproutAnchor, 
+                                hashSaplingAnchor, 
+                                cacheSproutAnchors, 
+                                cacheSaplingAnchors, 
+                                cacheSproutNullifiers, 
+                                cacheSaplingNullifiers, 
+                                mmrUpdateState);
     cacheCoins.clear();
     cacheSproutAnchors.clear();
     cacheSaplingAnchors.clear();
     cacheSproutNullifiers.clear();
     cacheSaplingNullifiers.clear();
+    mmrUpdateState.Reset();
     cachedCoinsUsage = 0;
     return fOk;
 }

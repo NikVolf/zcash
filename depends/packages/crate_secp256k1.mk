@@ -1,9 +1,9 @@
-package=crate_rand_os
-$(package)_crate_name=rand_os
-$(package)_version=0.2.2
+package=crate_secp256k1
+$(package)_crate_name=secp256k1
+$(package)_version=0.15.0
 $(package)_download_path=https://static.crates.io/crates/$($(package)_crate_name)
 $(package)_file_name=$($(package)_crate_name)-$($(package)_version).crate
-$(package)_sha256_hash=a788ae3edb696cfcba1c19bfd388cc4b8c21f8a408432b199c072825084da58a
+$(package)_sha256_hash=e0344a794ff109f85547039536028e12f313178ac1545e49fdf16a530d900a7b
 $(package)_crate_versioned_name=$($(package)_crate_name)
 
 define $(package)_preprocess_cmds

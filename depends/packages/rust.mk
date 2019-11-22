@@ -1,8 +1,8 @@
 package=rust
-$(package)_version=1.36.0
+$(package)_version=1.39.0
 $(package)_download_path=https://static.rust-lang.org/dist
 $(package)_file_name_linux=rust-$($(package)_version)-x86_64-unknown-linux-gnu.tar.gz
-$(package)_sha256_hash_linux=15e592ec52f14a0586dcebc87a957e472c4544e07359314f6354e2b8bd284c55
+$(package)_sha256_hash_linux=b10a73e5ba90034fe51f0f02cb78f297ed3880deb7d3738aa09dc5a4d9704a25
 $(package)_file_name_darwin=rust-$($(package)_version)-x86_64-apple-darwin.tar.gz
 $(package)_sha256_hash_darwin=91f151ec7e24f5b0645948d439fc25172ec4012f0584dd16c3fb1acb709aa325
 $(package)_file_name_freebsd=rust-$($(package)_version)-x86_64-unknown-freebsd.tar.gz

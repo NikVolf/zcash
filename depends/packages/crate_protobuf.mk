@@ -1,9 +1,9 @@
-package=crate_rand_os
-$(package)_crate_name=rand_os
-$(package)_version=0.2.2
+package=crate_protobuf
+$(package)_crate_name=protobuf
+$(package)_version=2.8.1
 $(package)_download_path=https://static.crates.io/crates/$($(package)_crate_name)
 $(package)_file_name=$($(package)_crate_name)-$($(package)_version).crate
-$(package)_sha256_hash=a788ae3edb696cfcba1c19bfd388cc4b8c21f8a408432b199c072825084da58a
+$(package)_sha256_hash=40361836defdd5871ff7e84096c6f6444af7fc157f8ef1789f54f147687caa20
 $(package)_crate_versioned_name=$($(package)_crate_name)
 
 define $(package)_preprocess_cmds

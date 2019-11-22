@@ -17,6 +17,8 @@
 
 #include <boost/function.hpp>
 
+#include "zcash/MMR.hpp"
+
 class CBlockIndex;
 
 // START insightexplorer
@@ -87,6 +89,9 @@ public:
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
     uint256 GetBestAnchor(ShieldedType type) const;
+    MMRIndex GetHistoryLength() const;
+    SerializedMMRNode GetHistoryAt(MMRIndex index) const;
+    uint256 GetHistoryRoot() const;
     bool BatchWrite(CCoinsMap &mapCoins,
                     const uint256 &hashBlock,
                     const uint256 &hashSproutAnchor,
@@ -94,7 +99,8 @@ public:
                     CAnchorsSproutMap &mapSproutAnchors,
                     CAnchorsSaplingMap &mapSaplingAnchors,
                     CNullifiersMap &mapSproutNullifiers,
-                    CNullifiersMap &mapSaplingNullifiers);
+                    CNullifiersMap &mapSaplingNullifiers,
+                    MMRUpdateState &mmrUpdateState);
     bool GetStats(CCoinsStats &stats) const;
 };
 

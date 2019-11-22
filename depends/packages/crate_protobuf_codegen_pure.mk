@@ -1,9 +1,9 @@
-package=crate_rand_os
-$(package)_crate_name=rand_os
-$(package)_version=0.2.2
+package=crate_protobuf_codegen_pure
+$(package)_crate_name=protobuf-codegen-pure
+$(package)_version=2.8.1
 $(package)_download_path=https://static.crates.io/crates/$($(package)_crate_name)
 $(package)_file_name=$($(package)_crate_name)-$($(package)_version).crate
-$(package)_sha256_hash=a788ae3edb696cfcba1c19bfd388cc4b8c21f8a408432b199c072825084da58a
+$(package)_sha256_hash=c1646acda5319f5b28b0bff4a484324df43ddae2c0f5a3f3e63c0b26095cd600
 $(package)_crate_versioned_name=$($(package)_crate_name)
 
 define $(package)_preprocess_cmds
