@@ -11,16 +11,16 @@
 
 namespace libzcash {
     
-void MMRUpdateState::Extend(const SerializedMMRTreeNode &leaf) {
+void HistoryCache::Extend(const HistoryNode &leaf) {
     appends[length++] = leaf;
 }
 
-SerializedMMRTreeNode MMRUpdateState::Get(MMRIndex idx) {
+HistoryNode HistoryCache::Get(HistoryIndex idx) {
     return appends[idx];
 }
 
-void MMRUpdateState::Truncate(MMRIndex newLength) {
-    for (MMRIndex idx = length-1; idx >= newLength; idx--) {
+void HistoryCache::Truncate(HistoryIndex newLength) {
+    for (HistoryIndex idx = length-1; idx >= newLength; idx--) {
         appends.erase(idx);
     }
 
@@ -28,12 +28,12 @@ void MMRUpdateState::Truncate(MMRIndex newLength) {
     if (updateDepth < length) updateDepth = length;
 }
 
-void MMRUpdateState::Reset() {
+void HistoryCache::Reset() {
     updateDepth = length;
     appends.clear();
 }
 
-SerializedMMRTreeNode NewLeaf(
+HistoryNode NewLeaf(
     uint256 commitment,
     uint32_t time,
     uint32_t target,
@@ -57,7 +57,7 @@ SerializedMMRTreeNode NewLeaf(
     );
 }
 
-SerializedMMRTreeNode NewNode(
+HistoryNode NewNode(
         uint256 subtreeCommitment,
         uint32_t startTime,
         uint32_t endTime,
@@ -72,7 +72,7 @@ SerializedMMRTreeNode NewNode(
     )
 {
     CDataStream buf(SER_DISK, 0);
-    SerializedMMRTreeNode result;
+    HistoryNode result;
 
     buf << subtreeCommitment;
     buf << startTime;
@@ -90,9 +90,9 @@ SerializedMMRTreeNode NewNode(
     return result;
 }
 
-SerializedMMRTreeEntry NewEntry(const SerializedMMRTreeNode node, uint32_t left, uint32_t right) {
+HistoryEntry NewEntry(const HistoryNode node, uint32_t left, uint32_t right) {
     CDataStream buf(SER_DISK, 0);
-    SerializedMMRTreeEntry result;
+    HistoryEntry result;
 
     uint8_t code = 0;
     buf << code;
@@ -105,9 +105,9 @@ SerializedMMRTreeEntry NewEntry(const SerializedMMRTreeNode node, uint32_t left,
     return result;
 }
 
-SerializedMMRTreeEntry NodeToEntry(const SerializedMMRTreeNode node) {
+HistoryEntry NodeToEntry(const HistoryNode node) {
     CDataStream buf(SER_DISK, 0);
-    SerializedMMRTreeEntry result;
+    HistoryEntry result;
 
     uint8_t code = 1;
     buf << code;

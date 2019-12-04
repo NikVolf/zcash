@@ -89,8 +89,8 @@ public:
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
     uint256 GetBestAnchor(ShieldedType type) const;
-    MMRIndex GetHistoryLength() const;
-    SerializedMMRNode GetHistoryAt(MMRIndex index) const;
+    HistoryIndex GetHistoryLength() const;
+    HistoryNode GetHistoryAt(HistoryIndex index) const;
     uint256 GetHistoryRoot() const;
     bool BatchWrite(CCoinsMap &mapCoins,
                     const uint256 &hashBlock,
@@ -100,7 +100,7 @@ public:
                     CAnchorsSaplingMap &mapSaplingAnchors,
                     CNullifiersMap &mapSproutNullifiers,
                     CNullifiersMap &mapSaplingNullifiers,
-                    MMRUpdateState &mmrUpdateState);
+                    HistoryCache &historyCache);
     bool GetStats(CCoinsStats &stats) const;
 };
 

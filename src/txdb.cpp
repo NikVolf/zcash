@@ -128,8 +128,8 @@ uint256 CCoinsViewDB::GetBestAnchor(ShieldedType type) const {
     return hashBestAnchor;
 }
 
-MMRIndex CCoinsViewDB::GetHistoryLength() const {
-    MMRIndex historyLength;
+HistoryIndex CCoinsViewDB::GetHistoryLength() const {
+    HistoryIndex historyLength;
     if (!db.Read(DB_MMR_LENGTH, historyLength)) {
         throw runtime_error("History data not available - reindex?");
     }
@@ -137,8 +137,8 @@ MMRIndex CCoinsViewDB::GetHistoryLength() const {
     return historyLength;
 }
 
-SerializedMMRNode CCoinsViewDB::GetHistoryAt(MMRIndex index) const {
-    SerializedMMRNode mmrNode;
+HistoryNode CCoinsViewDB::GetHistoryAt(HistoryIndex index) const {
+    HistoryNode mmrNode;
 
     if (index >= GetHistoryLength()) {
         throw runtime_error("History data inconsistent - reindex?");
@@ -193,22 +193,22 @@ void BatchWriteAnchors(CDBBatch& batch, Map& mapToUse, const char& dbChar)
     }
 }
 
-void BatchWriteMMR(CDBBatch& batch, MMRUpdateState& mmrUpdateState) {
+void BatchWriteMMR(CDBBatch& batch, HistoryCache& historyCache) {
     // delete old entries since updateDepth
-    for (int i = mmrUpdateState.updateDepth; i < mmrUpdateState.length; i++) {
+    for (int i = historyCache.updateDepth; i < historyCache.length; i++) {
         batch.Erase(make_pair(DB_MMR, i));
     }
 
     // replace/append new/updated entries
-    for (auto it = mmrUpdateState.appends.begin(); it != mmrUpdateState.appends.end(); ) {
+    for (auto it = historyCache.appends.begin(); it != historyCache.appends.end(); ) {
         batch.Write(make_pair(DB_MMR, it->first), it->second);
     }
 
     // write new length
-    batch.Write(DB_MMR_LENGTH, mmrUpdateState.length);
+    batch.Write(DB_MMR_LENGTH, historyCache.length);
 
     // write current root
-    batch.Write(DB_MMR_ROOT, mmrUpdateState.root);
+    batch.Write(DB_MMR_ROOT, historyCache.root);
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
@@ -219,7 +219,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
                               CAnchorsSaplingMap &mapSaplingAnchors,
                               CNullifiersMap &mapSproutNullifiers,
                               CNullifiersMap &mapSaplingNullifiers,
-                              MMRUpdateState &mmrUpdateState) {
+                              HistoryCache &historyCache) {
     CDBBatch batch(db);
     size_t count = 0;
     size_t changed = 0;
@@ -242,7 +242,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
     ::BatchWriteNullifiers(batch, mapSproutNullifiers, DB_NULLIFIER);
     ::BatchWriteNullifiers(batch, mapSaplingNullifiers, DB_SAPLING_NULLIFIER);
 
-    ::BatchWriteMMR(batch, mmrUpdateState);
+    ::BatchWriteMMR(batch, historyCache);
 
     if (!hashBlock.IsNull())
         batch.Write(DB_BEST_BLOCK, hashBlock);

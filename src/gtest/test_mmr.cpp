@@ -54,17 +54,17 @@ public:
         return false;
     }
 
-    MMRIndex GetHistoryLength() const {
+    HistoryIndex GetHistoryLength() const {
         return 0;
     }
 
-    SerializedMMRNode GetHistoryAt(MMRIndex index) const {
-        return SerializedMMRNode();
+    HistoryNode GetHistoryAt(HistoryIndex index) const {
+        return HistoryNode();
     }
 };
 
-SerializedMMRNode getLeafN(uint64_t block_num) {
-    SerializedMMRNode node = libzcash::NewLeaf(
+HistoryNode getLeafN(uint64_t block_num) {
+    HistoryNode node = libzcash::NewLeaf(
         uint256(),
         block_num*10,
         block_num*13,

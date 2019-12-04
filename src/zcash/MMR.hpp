@@ -15,26 +15,26 @@ namespace libzcash {
 const int NODE_SERIALIZED_LENGTH = 171;
 const int ENTRY_SERIALIZED_LENGTH = 180;
 
-typedef std::array<unsigned char, NODE_SERIALIZED_LENGTH> SerializedMMRTreeNode;
-typedef std::array<unsigned char, ENTRY_SERIALIZED_LENGTH> SerializedMMRTreeEntry;
+typedef std::array<unsigned char, NODE_SERIALIZED_LENGTH> HistoryNode;
+typedef std::array<unsigned char, ENTRY_SERIALIZED_LENGTH> HistoryEntry;
 
-typedef long MMRIndex;
+typedef long HistoryIndex;
 
-class MMRUpdateState {
+class HistoryCache {
 public:
-    std::unordered_map<MMRIndex, SerializedMMRTreeNode> appends;
-    MMRIndex length;
-    MMRIndex updateDepth;
+    std::unordered_map<HistoryIndex, HistoryNode> appends;
+    HistoryIndex length;
+    HistoryIndex updateDepth;
     uint256 root;
 
-    MMRUpdateState(MMRIndex initialLength) : length(initialLength), updateDepth(initialLength) { };
-    void Extend(const SerializedMMRTreeNode &leaf);
-    SerializedMMRTreeNode Get(MMRIndex idx);
-    void Truncate(MMRIndex newLength);
+    HistoryCache(HistoryIndex initialLength) : length(initialLength), updateDepth(initialLength) { };
+    void Extend(const HistoryNode &leaf);
+    HistoryNode Get(HistoryIndex idx);
+    void Truncate(HistoryIndex newLength);
     void Reset();
 };
 
-SerializedMMRTreeNode NewNode(
+HistoryNode NewNode(
     uint256 subtreeCommitment,
     uint32_t startTime,
     uint32_t endTime,
@@ -48,7 +48,7 @@ SerializedMMRTreeNode NewNode(
     uint64_t shieldedTxCount  
 );
 
-SerializedMMRTreeNode NewLeaf(
+HistoryNode NewLeaf(
     uint256 commitment,
     uint32_t time,
     uint32_t target,
@@ -58,14 +58,14 @@ SerializedMMRTreeNode NewLeaf(
     uint64_t shieldedTxCount
 );
 
-SerializedMMRTreeEntry NewEntry(const SerializedMMRTreeNode node, uint32_t left, uint32_t right);
-SerializedMMRTreeEntry NodeToEntry(const SerializedMMRTreeNode node);
+HistoryEntry NewEntry(const HistoryNode node, uint32_t left, uint32_t right);
+HistoryEntry NodeToEntry(const HistoryNode node);
 
 }
 
-typedef libzcash::MMRUpdateState MMRUpdateState;
-typedef libzcash::MMRIndex MMRIndex;
-typedef libzcash::SerializedMMRTreeNode SerializedMMRNode;
-typedef libzcash::SerializedMMRTreeEntry SerializedMMREntry;
+typedef libzcash::HistoryCache HistoryCache;
+typedef libzcash::HistoryIndex HistoryIndex;
+typedef libzcash::HistoryNode HistoryNode;
+typedef libzcash::HistoryEntry HistoryEntry;
 
 #endif /* ZC_MMR_H_ */
