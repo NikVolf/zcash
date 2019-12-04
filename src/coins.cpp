@@ -407,9 +407,15 @@ uint32_t CCoinsViewCache::PreloadHistoryTree(bool extra, std::vector<SerializedM
 void CCoinsViewCache::PushHistoryNode(const SerializedMMRNode node) {
     auto treeLength = GetHistoryLength();
 
+    // TODO: pass consensus branch id?
+    uint32_t consensusBranchId = 0;
+    
     if (treeLength == 0) {
         // special case, it just goes into the cache right away
         mmrUpdateState.Extend(node);
+
+        librustzcash_mmr_hash_node(consensusBranchId, node.begin(), mmrUpdateState.root.begin());
+
         return;
     }
 
@@ -417,9 +423,6 @@ void CCoinsViewCache::PushHistoryNode(const SerializedMMRNode node) {
     std::vector<uint32_t> entry_indices;
 
     PreloadHistoryTree(false, entries, entry_indices);
-   
-    // TODO: pass consensus branch id?
-    uint32_t consensusBranchId = 0;
 
     uint256 newRoot;
     std::array<SerializedMMRNode, 32> appendBuf;

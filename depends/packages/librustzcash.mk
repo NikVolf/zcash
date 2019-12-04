@@ -3,8 +3,8 @@ $(package)_version=0.2.0
 $(package)_download_path=https://github.com/zcash/$(package)/archive/
 $(package)_file_name=$(package)-$($(package)_git_commit).tar.gz
 $(package)_download_file=$($(package)_git_commit).tar.gz
-$(package)_sha256_hash=a5a357eaf055e60f3658151fc921623d88f30e42a8ab73c275411cc42c305565
-$(package)_git_commit=6ab56feb62bc6099ff0cb2b1fe477a1d41332acf
+$(package)_sha256_hash=3b2c9c97db24db5a34e59d82ed08a64677c81798c67f76cc8b2aa3815626469b
+$(package)_git_commit=708c3247f020aacb2b6f24276101e2a0f35fb534
 $(package)_dependencies=rust
 ifeq ($(LIBRUSTZCASH_OVERRIDE),)
 $(package)_dependencies+=$(rust_crates)
