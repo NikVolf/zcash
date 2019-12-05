@@ -142,6 +142,8 @@ struct Params {
     int64_t MinActualTimespan(int nHeight) const;
     int64_t MaxActualTimespan(int nHeight) const;
 
+    int32_t MinBlockVersion(int nHeight) const;
+
     uint256 nMinimumChainWork;
 };
 } // namespace Consensus

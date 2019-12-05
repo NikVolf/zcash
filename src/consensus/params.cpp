@@ -78,4 +78,11 @@ namespace Consensus {
     int64_t Params::MaxActualTimespan(int nHeight) const {
         return (AveragingWindowTimespan(nHeight) * (100 + nPowMaxAdjustDown)) / 100;
     }
+
+    int32_t Params::MinBlockVersion(int32_t nHeight) const {
+        if (NetworkUpgradeActive(nHeight, Consensus::UPGRADE_HEARTWOOD))
+            return 5;
+
+        return 4;
+    }
 }

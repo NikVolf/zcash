@@ -3966,9 +3966,9 @@ bool ContextualCheckBlockHeader(
             return state.DoS(100, error("%s: forked chain older than last checkpoint (height %d)", __func__, nHeight));
     }
 
-    // Reject block.nVersion < 4 blocks
-    if (block.nVersion < 4)
-        return state.Invalid(error("%s : rejected nVersion<4 block", __func__),
+    // Reject block.nVersion < Consensus::Params::MinBlockVersion
+    if (block.nVersion < chainParams.GetConsensus().MinBlockVersion(pindexPrev->nHeight+1))
+        return state.Invalid(error("%s : rejected too low nVersion", __func__),
                              REJECT_OBSOLETE, "bad-version");
 
     return true;

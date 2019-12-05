@@ -27,6 +27,7 @@ public:
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint256 hashFinalSaplingRoot;
+    uint256 hashHistoryRoot;
     uint32_t nTime;
     uint32_t nBits;
     uint256 nNonce;
@@ -44,7 +45,13 @@ public:
         READWRITE(this->nVersion);
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
-        READWRITE(hashFinalSaplingRoot);
+        if (nVersion == 4) { 
+            READWRITE(hashFinalSaplingRoot);
+        } else if (nVersion == 5) {
+            READWRITE(hashHistoryRoot);
+        } else {
+            throw std::runtime_error("nVersion should be 4 or 5");
+        }
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
@@ -57,6 +64,7 @@ public:
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
         hashFinalSaplingRoot.SetNull();
+        hashHistoryRoot.SetNull();
         nTime = 0;
         nBits = 0;
         nNonce = uint256();
