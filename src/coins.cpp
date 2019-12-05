@@ -307,34 +307,8 @@ void draftMMRNode(std::vector<uint32_t> &indices,
     entries.push_back(newEntry);
 }
 
-int countZeros(uint32_t x) 
-{ 
-    unsigned y; 
-    int n = 32; 
-    y = x >> 16; 
-    if (y != 0) { 
-        n = n - 16; 
-        x = y; 
-    } 
-    y = x >> 8; 
-    if (y != 0) { 
-        n = n - 8; 
-        x = y; 
-    } 
-    y = x >> 4; 
-    if (y != 0) { 
-        n = n - 4; 
-        x = y; 
-    } 
-    y = x >> 2; 
-    if (y != 0) { 
-        n = n - 2; 
-        x = y; 
-    } 
-    y = x >> 1; 
-    if (y != 0) 
-        return n - 2; 
-    return n - x; 
+static inline int log2i(uint32_t x) {
+    return 32 - __builtin_clz(x) - 1;
 }
 
 uint32_t CCoinsViewCache::PreloadHistoryTree(bool extra, std::vector<HistoryEntry> &entries, std::vector<uint32_t> &entry_indices) {
@@ -355,8 +329,7 @@ uint32_t CCoinsViewCache::PreloadHistoryTree(bool extra, std::vector<HistoryEntr
         entry_indices.push_back(0);
         return 1;
     } else {
-        // integer log2 of (treeLength+1), -1
-        h = (32 - countZeros(treeLength + 1) - 1) - 1;
+        h = log2i(treeLength + 1) - 1;
         peak_pos = (1 << (h + 1)) - 1;
 
         for (;h != 0;) {
