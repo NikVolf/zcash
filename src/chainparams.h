@@ -74,7 +74,6 @@ public:
     CAmount SproutValuePoolCheckpointBalance() const { return nSproutValuePoolCheckpointBalance; }
     uint256 SproutValuePoolCheckpointBlockHash() const { return hashSproutValuePoolCheckpointBlock; }
     bool ZIP209Enabled() const { return fZIP209Enabled; }
-    bool ZIP220Enabled() const;
 
     const CBlock& GenesisBlock() const { return genesis; }
     /** Make miner wait to have peers to avoid wasting work */

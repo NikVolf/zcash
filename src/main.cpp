@@ -2472,9 +2472,9 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
         view.PopAnchor(SaplingMerkleTree::empty_root(), SAPLING);
     }
 
-    if (chainparams.ZIP220Enabled()) {
-        view.PopHistoryNode();
-    }
+    // History read/write is unconditional, since it is generated for entire
+    // chain regardless of the Heartwood upgrade activation height.
+    view.PopHistoryNode();
 
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
@@ -2881,8 +2881,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         }
     }
 
-    if (chainparams.ZIP220Enabled()) {
-        // grow history with zip220
+    // History read/write is unconditional, since it is generated for entire
+    // chain regardless of the Heartwood upgrade activation height.
+    {
         auto historyNode = libzcash::NewLeaf(
             block.GetHash(), 
             block.nTime, 

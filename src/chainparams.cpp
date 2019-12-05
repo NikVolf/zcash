@@ -593,10 +593,6 @@ std::string CChainParams::GetFoundersRewardAddressAtHeight(int nHeight) const {
     return vFoundersRewardAddress[i];
 }
 
-bool CChainParams::ZIP220Enabled() const {
-    return false;
-}
-
 // Block height must be >0 and <=last founders reward block height
 // The founders reward address is expected to be a multisig (P2SH) address
 CScript CChainParams::GetFoundersRewardScriptAtHeight(int nHeight) const {
