@@ -127,6 +127,7 @@ public:
         block.hashPrevBlock  = hashPrevBlock;
         block.hashMerkleRoot = hashMerkleRoot;
         block.hashFinalSaplingRoot   = hashFinalSaplingRoot;
+        block.hashHistoryRoot = hashHistoryRoot;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;

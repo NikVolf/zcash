@@ -430,10 +430,17 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
         pblock->nNonce = ArithToUint256(nonce);
 
         // Fill in header
-        pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
-        pblock->hashFinalSaplingRoot   = sapling_tree.root();
+
+        if (chainparams.GetConsensus().NetworkUpgradeActive(nHeight, Consensus::UPGRADE_HEARTWOOD)) {
+            pblock->nVersion = 5;
+            pblock->hashHistoryRoot = view.GetHistoryRoot();
+        }  else {
+            pblock->hashFinalSaplingRoot = sapling_tree.root();
+        }
+
+        pblock->hashPrevBlock   = pindexPrev->GetBlockHash();
         UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-        pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
+        pblock->nBits           = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
         pblock->nSolution.clear();
         pblocktemplate->vTxSigOps[0] = GetLegacySigOpCount(pblock->vtx[0]);
 
