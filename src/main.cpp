@@ -2871,9 +2871,18 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     }
     blockundo.old_sprout_tree_root = old_sprout_tree_root;
 
-    // If Sapling is active, block.hashFinalSaplingRoot must be the
-    // same as the root of the Sapling tree
-    if (chainparams.GetConsensus().NetworkUpgradeActive(pindex->nHeight, Consensus::UPGRADE_SAPLING)) {
+    // If Heartwood is active, block.hashHistoryRoot must be the same as previous
+    // block history root (which is not yet updated)
+    if (chainparams.GetConsensus().NetworkUpgradeActive(pindex->nHeight, Consensus::UPGRADE_HEARTWOOD)) {
+        if (block.hashHistoryRoot != view.GetHistoryRoot()) {
+            return state.DoS(100,
+                         error("ConnectBlock(): block's hashHistoryRoot is incorrect"),
+                               REJECT_INVALID, "bad-history-root-in-block");
+        }
+    }
+    // Else if Heartwood is still not active, but if Sapling is active, 
+    // block.hashFinalSaplingRoot must be the same as the root of the Sapling tree
+    else if (chainparams.GetConsensus().NetworkUpgradeActive(pindex->nHeight, Consensus::UPGRADE_SAPLING)) {
         if (block.hashFinalSaplingRoot != sapling_tree.root()) {
             return state.DoS(100,
                          error("ConnectBlock(): block's hashFinalSaplingRoot is incorrect"),
