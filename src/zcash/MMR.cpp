@@ -15,10 +15,6 @@ void HistoryCache::Extend(const HistoryNode &leaf) {
     appends[length++] = leaf;
 }
 
-HistoryNode HistoryCache::Get(HistoryIndex idx) {
-    return appends[idx];
-}
-
 void HistoryCache::Truncate(HistoryIndex newLength) {
     for (HistoryIndex idx = length-1; idx >= newLength; idx--) {
         appends.erase(idx);

@@ -54,11 +54,11 @@ public:
         return false;
     }
 
-    HistoryIndex GetHistoryLength() const {
+    HistoryIndex GetHistoryLength(uint32_t branchId) const {
         return 0;
     }
 
-    HistoryNode GetHistoryAt(HistoryIndex index) const {
+    HistoryNode GetHistoryAt(uint32_t branchId, HistoryIndex index) const {
         return HistoryNode();
     }
 };
@@ -81,29 +81,86 @@ TEST(MMR, Smoky) {
     FakeCoinsViewDB fakeDB;
     CCoinsViewCache view(&fakeDB);
 
-    view.PushHistoryNode(getLeafN(1));
+    view.PushHistoryNode(1, getLeafN(1));
 
-    EXPECT_EQ(view.GetHistoryLength(), 1);
+    EXPECT_EQ(view.GetHistoryLength(1), 1);
 
-    view.PushHistoryNode(getLeafN(2));
+    view.PushHistoryNode(1, getLeafN(2));
 
-    EXPECT_EQ(view.GetHistoryLength(), 3);
+    EXPECT_EQ(view.GetHistoryLength(1), 3);
 
-    view.PushHistoryNode(getLeafN(3));
+    view.PushHistoryNode(1, getLeafN(3));
 
-    EXPECT_EQ(view.GetHistoryLength(), 4);
+    EXPECT_EQ(view.GetHistoryLength(1), 4);
 
-    view.PushHistoryNode(getLeafN(4));
+    view.PushHistoryNode(1, getLeafN(4));
 
-    uint256 h4Root = view.GetHistoryRoot();
+    uint256 h4Root = view.GetHistoryRoot(1);
 
-    EXPECT_EQ(view.GetHistoryLength(), 7);
+    EXPECT_EQ(view.GetHistoryLength(1), 7);
 
-    view.PushHistoryNode(getLeafN(5));
-    EXPECT_EQ(view.GetHistoryLength(), 8);
+    view.PushHistoryNode(1, getLeafN(5));
+    EXPECT_EQ(view.GetHistoryLength(1), 8);
 
-    view.PopHistoryNode();
+    view.PopHistoryNode(1);
 
-    EXPECT_EQ(view.GetHistoryLength(), 7);
-    EXPECT_EQ(h4Root, view.GetHistoryRoot());
+    EXPECT_EQ(view.GetHistoryLength(1), 7);
+    EXPECT_EQ(h4Root, view.GetHistoryRoot(1));
+}
+
+
+TEST(MMR, EpochBoundaries) {
+    // Fake an empty view
+    FakeCoinsViewDB fakeDB;
+    CCoinsViewCache view(&fakeDB);
+
+    view.PushHistoryNode(1, getLeafN(1));
+
+    EXPECT_EQ(view.GetHistoryLength(1), 1);
+
+    view.PushHistoryNode(1, getLeafN(2));
+
+    EXPECT_EQ(view.GetHistoryLength(1), 3);
+
+    view.PushHistoryNode(1, getLeafN(3));
+
+    EXPECT_EQ(view.GetHistoryLength(1), 4);
+
+    view.PushHistoryNode(1, getLeafN(4));
+
+    uint256 h4Root = view.GetHistoryRoot(1);
+
+    EXPECT_EQ(view.GetHistoryLength(1), 7);
+
+    view.PushHistoryNode(1, getLeafN(5));
+    EXPECT_EQ(view.GetHistoryLength(1), 8);
+
+
+    // New Epoch(2)
+    view.PushHistoryNode(2, getLeafN(6));
+    EXPECT_EQ(view.GetHistoryLength(1), 8);
+    EXPECT_EQ(view.GetHistoryLength(2), 1);
+
+    view.PushHistoryNode(2, getLeafN(7));
+    EXPECT_EQ(view.GetHistoryLength(1), 8);
+    EXPECT_EQ(view.GetHistoryLength(2), 3);
+
+    view.PushHistoryNode(2, getLeafN(8));
+    EXPECT_EQ(view.GetHistoryLength(1), 8);
+    EXPECT_EQ(view.GetHistoryLength(2), 4);
+
+    // Rolling epoch back to 1
+    view.PopHistoryNode(2);
+    EXPECT_EQ(view.GetHistoryLength(2), 3);
+
+    view.PopHistoryNode(2);
+    EXPECT_EQ(view.GetHistoryLength(2), 1);
+
+    
+    EXPECT_EQ(view.GetHistoryLength(1), 8);
+
+    // And even rolling epoch 1 back a bit
+    // view.PopHistoryNode(1);
+    // EXPECT_EQ(view.GetHistoryLength(1), 7);
+
 }

@@ -8,6 +8,7 @@
 #include "serialize.h"
 #include "streams.h"
 #include "uint256.h"
+
 #include "librustzcash.h"
 
 namespace libzcash {
@@ -26,10 +27,14 @@ public:
     HistoryIndex length;
     HistoryIndex updateDepth;
     uint256 root;
+    uint32_t epoch;
 
-    HistoryCache(HistoryIndex initialLength) : length(initialLength), updateDepth(initialLength) { };
+    HistoryCache(HistoryIndex initialLength, uint256 initialRoot, uint32_t initialEpoch) : 
+        length(initialLength), updateDepth(initialLength), root(initialRoot), epoch(initialEpoch) { };
+
+    HistoryCache() { }
+
     void Extend(const HistoryNode &leaf);
-    HistoryNode Get(HistoryIndex idx);
     void Truncate(HistoryIndex newLength);
     void Reset();
 };

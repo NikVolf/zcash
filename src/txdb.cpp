@@ -35,9 +35,9 @@ static const char DB_FLAG = 'F';
 static const char DB_REINDEX_FLAG = 'R';
 static const char DB_LAST_BLOCK = 'l';
 
-static const char DB_MMR = 'm';
 static const char DB_MMR_LENGTH = 'M';
-static const char DB_MMR_ROOT = 'R';
+static const char DB_MMR_NODE = 'm';
+static const char DB_MMR_ROOT = 'r';
 
 // insightexplorer
 static const char DB_ADDRESSINDEX = 'd';
@@ -128,34 +128,35 @@ uint256 CCoinsViewDB::GetBestAnchor(ShieldedType type) const {
     return hashBestAnchor;
 }
 
-HistoryIndex CCoinsViewDB::GetHistoryLength() const {
+HistoryIndex CCoinsViewDB::GetHistoryLength(uint32_t epochId) const {
     HistoryIndex historyLength;
-    if (!db.Read(DB_MMR_LENGTH, historyLength)) {
+    if (!db.Read(make_pair(DB_MMR_LENGTH, epochId), historyLength)) {
         throw runtime_error("History data not available - reindex?");
     }
 
     return historyLength;
 }
 
-HistoryNode CCoinsViewDB::GetHistoryAt(HistoryIndex index) const {
+HistoryNode CCoinsViewDB::GetHistoryAt(uint32_t epochId, HistoryIndex index) const {
     HistoryNode mmrNode;
 
-    if (index >= GetHistoryLength()) {
+    if (index >= GetHistoryLength(epochId)) {
         throw runtime_error("History data inconsistent - reindex?");
     }
 
-    if (!db.Read(make_pair(DB_MMR, index), mmrNode)) {
+    if (!db.Read(make_pair(make_pair(DB_MMR_NODE, epochId), index), mmrNode)) {
         throw runtime_error("History data inconsistent (expected node not found) - reindex?");
     }
 
     return mmrNode;
 }
 
-uint256 CCoinsViewDB::GetHistoryRoot() const {
-    auto root = uint256();
-
-    db.Read(DB_MMR_ROOT, root);
-
+uint256 CCoinsViewDB::GetHistoryRoot(uint32_t epochId) const {
+    uint256 root;
+    if (!db.Read(make_pair(DB_MMR_ROOT, epochId), root))
+    {
+        root = uint256();
+    }
     return root;
 }
 
@@ -193,22 +194,28 @@ void BatchWriteAnchors(CDBBatch& batch, Map& mapToUse, const char& dbChar)
     }
 }
 
-void BatchWriteMMR(CDBBatch& batch, HistoryCache& historyCache) {
-    // delete old entries since updateDepth
-    for (int i = historyCache.updateDepth; i < historyCache.length; i++) {
-        batch.Erase(make_pair(DB_MMR, i));
+void BatchWriteMMR(CDBBatch& batch, CHistoryCacheMap& historyCacheMap) {
+
+    for (auto nextHistoryCache = historyCacheMap.begin(); nextHistoryCache != historyCacheMap.end(); nextHistoryCache++) {
+        auto historyCache = nextHistoryCache->second;
+        auto epochId = nextHistoryCache->first;
+
+        // delete old entries since updateDepth
+        for (int i = historyCache.updateDepth; i < historyCache.length; i++) {
+            batch.Erase(make_pair(make_pair(DB_MMR_NODE, epochId), i));
+        }
+
+        // replace/append new/updated entries
+        for (auto it = historyCache.appends.begin(); it != historyCache.appends.end(); it++) {
+            batch.Write(make_pair(make_pair(DB_MMR_NODE, epochId), it->first), it->second);
+        }
+
+        // write new length
+        batch.Write(make_pair(DB_MMR_LENGTH, epochId), historyCache.length);
+
+        // write current root
+        batch.Write(make_pair(DB_MMR_ROOT, epochId), historyCache.root);
     }
-
-    // replace/append new/updated entries
-    for (auto it = historyCache.appends.begin(); it != historyCache.appends.end(); ) {
-        batch.Write(make_pair(DB_MMR, it->first), it->second);
-    }
-
-    // write new length
-    batch.Write(DB_MMR_LENGTH, historyCache.length);
-
-    // write current root
-    batch.Write(DB_MMR_ROOT, historyCache.root);
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
@@ -219,7 +226,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
                               CAnchorsSaplingMap &mapSaplingAnchors,
                               CNullifiersMap &mapSproutNullifiers,
                               CNullifiersMap &mapSaplingNullifiers,
-                              HistoryCache &historyCache) {
+                              CHistoryCacheMap &historyCacheMap) {
     CDBBatch batch(db);
     size_t count = 0;
     size_t changed = 0;
@@ -242,7 +249,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
     ::BatchWriteNullifiers(batch, mapSproutNullifiers, DB_NULLIFIER);
     ::BatchWriteNullifiers(batch, mapSaplingNullifiers, DB_SAPLING_NULLIFIER);
 
-    ::BatchWriteMMR(batch, historyCache);
+    ::BatchWriteMMR(batch, historyCacheMap);
 
     if (!hashBlock.IsNull())
         batch.Write(DB_BEST_BLOCK, hashBlock);

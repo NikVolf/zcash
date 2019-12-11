@@ -2472,9 +2472,11 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
         view.PopAnchor(SaplingMerkleTree::empty_root(), SAPLING);
     }
 
+    auto consensusBranchId = CurrentEpochBranchId(pindex->nHeight, chainparams.GetConsensus());
+
     // History read/write is unconditional, since it is generated for entire
     // chain regardless of the Heartwood upgrade activation height.
-    view.PopHistoryNode();
+    view.PopHistoryNode(consensusBranchId);
 
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
@@ -2894,7 +2896,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             total_shielded_tx
         );
 
-        view.PushHistoryNode(historyNode);
+        view.PushHistoryNode(consensusBranchId, historyNode);
     }
 
     int64_t nTime1 = GetTimeMicros(); nTimeConnect += nTime1 - nTimeStart;

@@ -322,6 +322,7 @@ typedef boost::unordered_map<uint256, CCoinsCacheEntry, CCoinsKeyHasher> CCoinsM
 typedef boost::unordered_map<uint256, CAnchorsSproutCacheEntry, CCoinsKeyHasher> CAnchorsSproutMap;
 typedef boost::unordered_map<uint256, CAnchorsSaplingCacheEntry, CCoinsKeyHasher> CAnchorsSaplingMap;
 typedef boost::unordered_map<uint256, CNullifiersCacheEntry, CCoinsKeyHasher> CNullifiersMap;
+typedef boost::unordered_map<uint32_t, HistoryCache> CHistoryCacheMap;
 
 struct CCoinsStats
 {
@@ -364,13 +365,13 @@ public:
     virtual uint256 GetBestAnchor(ShieldedType type) const;
 
     //! Get the current chain history length (which should be rougly chain height x2)
-    virtual HistoryIndex GetHistoryLength() const;
+    virtual HistoryIndex GetHistoryLength(uint32_t epochId) const;
 
     //! Get history node at specified index
-    HistoryNode GetHistoryAt(HistoryIndex index) const;
+    HistoryNode GetHistoryAt(uint32_t epochId, HistoryIndex index) const;
 
     //! Get current history root
-    uint256 GetHistoryRoot() const;
+    uint256 GetHistoryRoot(uint32_t epochId) const;
 
     //! Do a bulk modification (multiple CCoins changes + BestBlock change).
     //! The passed mapCoins can be modified.
@@ -382,7 +383,7 @@ public:
                             CAnchorsSaplingMap &mapSaplingAnchors,
                             CNullifiersMap &mapSproutNullifiers,
                             CNullifiersMap &mapSaplingNullifiers,
-                            HistoryCache &updateMMRState);
+                            CHistoryCacheMap &historyCacheMap);
 
     //! Calculate statistics about the unspent transaction output set
     virtual bool GetStats(CCoinsStats &stats) const;
@@ -407,9 +408,9 @@ public:
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
     uint256 GetBestAnchor(ShieldedType type) const;
-    HistoryIndex GetHistoryLength() const;
-    HistoryNode GetHistoryAt(HistoryIndex index) const;
-    uint256 GetHistoryRoot() const;
+    HistoryIndex GetHistoryLength(uint32_t epochId) const;
+    HistoryNode GetHistoryAt(uint32_t epochId, HistoryIndex index) const;
+    uint256 GetHistoryRoot(uint32_t epochId) const;
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins,
                     const uint256 &hashBlock,
@@ -419,7 +420,7 @@ public:
                     CAnchorsSaplingMap &mapSaplingAnchors,
                     CNullifiersMap &mapSproutNullifiers,
                     CNullifiersMap &mapSaplingNullifiers,
-                    HistoryCache &updateMMRState);
+                    CHistoryCacheMap &historyCacheMap);
     bool GetStats(CCoinsStats &stats) const;
 };
 
@@ -466,7 +467,7 @@ protected:
     mutable CAnchorsSaplingMap cacheSaplingAnchors;
     mutable CNullifiersMap cacheSproutNullifiers;
     mutable CNullifiersMap cacheSaplingNullifiers;
-    mutable HistoryCache historyCache;
+    mutable CHistoryCacheMap historyCacheMap;
 
     /* Cached dynamic memory usage for the inner CCoins objects. */
     mutable size_t cachedCoinsUsage;
@@ -483,9 +484,9 @@ public:
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
     uint256 GetBestAnchor(ShieldedType type) const;
-    HistoryIndex GetHistoryLength() const;
-    HistoryNode GetHistoryAt(HistoryIndex index) const;
-    uint256 GetHistoryRoot() const;
+    HistoryIndex GetHistoryLength(uint32_t epochId) const;
+    HistoryNode GetHistoryAt(uint32_t epochId, HistoryIndex index) const;
+    uint256 GetHistoryRoot(uint32_t epochId) const;
     void SetBestBlock(const uint256 &hashBlock);
     bool BatchWrite(CCoinsMap &mapCoins,
                     const uint256 &hashBlock,
@@ -495,7 +496,7 @@ public:
                     CAnchorsSaplingMap &mapSaplingAnchors,
                     CNullifiersMap &mapSproutNullifiers,
                     CNullifiersMap &mapSaplingNullifiers,
-                    HistoryCache &updateMMRState);
+                    CHistoryCacheMap &historyCacheMap);
 
     // Adds the tree to mapSproutAnchors (or mapSaplingAnchors based on the type of tree)
     // and sets the current commitment root to this root.
@@ -509,10 +510,10 @@ public:
     void SetNullifiers(const CTransaction& tx, bool spent);
 
     // Push MMR node history at the end of the history tree
-    void PushHistoryNode(const HistoryNode node);
+    void PushHistoryNode(uint32_t epochId, const HistoryNode node);
 
     // Pop MMR node history from the end of the history tree
-    void PopHistoryNode();
+    void PopHistoryNode(uint32_t epochId);
 
     /**
      * Return a pointer to CCoins in the cache, or NULL if not found. This is
@@ -610,7 +611,9 @@ private:
 
     //! Preload history tree for futher update. If extra passed, extra nodes for deletion also preloaded
     //! Returns number of peaks, not total number of loaded nodes.
-    uint32_t PreloadHistoryTree(bool extra, std::vector<HistoryEntry> &entries, std::vector<uint32_t> &entry_indices);
+    uint32_t PreloadHistoryTree(uint32_t epochId, bool extra, std::vector<HistoryEntry> &entries, std::vector<uint32_t> &entry_indices);
+
+    HistoryCache& SelectHistoryCache(uint32_t epochId) const;
 };
 
 #endif // BITCOIN_COINS_H
