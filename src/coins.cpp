@@ -207,7 +207,8 @@ HistoryNode CCoinsViewCache::GetHistoryAt(uint32_t epochId, HistoryIndex index) 
     HistoryCache& historyCache = SelectHistoryCache(epochId);
 
     if (index >= historyCache.length) {
-        // TODO: soft error?
+        // Caller should ensure that he is limiting history 
+        // request to 0..GetHistoryLength(epochId)-1 range
         throw std::runtime_error("Invalid history request");
     }
 
@@ -440,7 +441,8 @@ void CCoinsViewCache::PopHistoryNode(uint32_t epochId) {
 
     // elementary pops near the head of tree
     if (treeLength == 0) {
-        // TODO: not sure if it can happen atm
+        // Caller is not expected to pop from empty tree! Caller should
+        // switch to previous epoch and pop history from there.
         throw std::runtime_error("popping hisory node from empty history");
     } else if (treeLength == 1) {
         // Just resetting tree to empty
@@ -466,8 +468,6 @@ void CCoinsViewCache::PopHistoryNode(uint32_t epochId) {
 
     uint32_t peak_count = PreloadHistoryTree(epochId, true, entries, entry_indices);
 
-    // TODO: pass consensus branch id?
-    uint32_t consensusBranchId = 0;
     uint256 newRoot;
 
     uint32_t numberOfDeletes = librustzcash_mmr_delete(
