@@ -334,7 +334,7 @@ uint32_t CCoinsViewCache::PreloadHistoryTree(uint32_t epochId, bool extra, std::
         h = log2i(treeLength + 1) - 1;
         peak_pos = (1 << (h + 1)) - 1;
 
-        for (;h != 0;) {
+        while (h != 0) {
             if (peak_pos > treeLength) {
                 // left child, -2^h
                 peak_pos = peak_pos - (1 << h);

@@ -1,3 +1,5 @@
+#include "MMR.hpp"
+
 #include <stdexcept>
 
 #include <boost/foreach.hpp>
@@ -6,8 +8,6 @@
 #include "streams.h"
 #include "uint256.h"
 #include "librustzcash.h"
-
-#include "MMR.hpp"
 
 namespace libzcash {
     
@@ -21,12 +21,15 @@ void HistoryCache::Truncate(HistoryIndex newLength) {
     }
 
     length = newLength;
+    // we track how deep updates go back in the tree, so we could later
+    // update everything starting from `updateDepth`
+    // 
+    // imagine we rolled two blocks back and then put another 3 blocks on top 
+    // of the rolled back state. In that case ` updateDepth` will be H-3, while length
+    // will be H (where H is a final chain height after such operation). So we know that
+    // history entries in the range of H-3..H are expected to pushed into the database
+    // to replace/append to the persistent nodes there.
     if (updateDepth < length) updateDepth = length;
-}
-
-void HistoryCache::Reset() {
-    updateDepth = length;
-    appends.clear();
 }
 
 HistoryNode NewLeaf(

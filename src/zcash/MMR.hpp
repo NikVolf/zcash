@@ -23,10 +23,16 @@ typedef long HistoryIndex;
 
 class HistoryCache {
 public:
+    // updates to the persistent(db) layer
     std::unordered_map<HistoryIndex, HistoryNode> appends;
+    // current length of the history
     HistoryIndex length;
+    // how much back into the old state current update state
+    // goes
     HistoryIndex updateDepth;
+    // current root of the history
     uint256 root;
+    // current epoch of this history state
     uint32_t epoch;
 
     HistoryCache(HistoryIndex initialLength, uint256 initialRoot, uint32_t initialEpoch) : 
@@ -34,11 +40,14 @@ public:
 
     HistoryCache() { }
 
+    // Extends current history update by one history node.
     void Extend(const HistoryNode &leaf);
+
+    // Truncates current history to the new length.
     void Truncate(HistoryIndex newLength);
-    void Reset();
 };
 
+// New history node with provided metadata in full.
 HistoryNode NewNode(
     uint256 subtreeCommitment,
     uint32_t startTime,
@@ -53,6 +62,7 @@ HistoryNode NewNode(
     uint64_t shieldedTxCount  
 );
 
+// New history node with metadata based on block state.
 HistoryNode NewLeaf(
     uint256 commitment,
     uint32_t time,
@@ -63,7 +73,10 @@ HistoryNode NewLeaf(
     uint64_t shieldedTxCount
 );
 
+// Convert history node to tree node (with children references)
 HistoryEntry NewEntry(const HistoryNode node, uint32_t left, uint32_t right);
+
+// Convert history node to leaf node (end nodes without children)
 HistoryEntry NodeToEntry(const HistoryNode node);
 
 }
