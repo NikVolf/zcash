@@ -81,6 +81,9 @@ TEST(MMR, Smoky) {
     FakeCoinsViewDB fakeDB;
     CCoinsViewCache view(&fakeDB);
 
+    // Test initial value
+    EXPECT_EQ(view.GetHistoryLength(0), 0);
+
     view.PushHistoryNode(1, getLeafN(1));
 
     EXPECT_EQ(view.GetHistoryLength(1), 1);
@@ -155,12 +158,9 @@ TEST(MMR, EpochBoundaries) {
 
     view.PopHistoryNode(2);
     EXPECT_EQ(view.GetHistoryLength(2), 1);
-
-    
     EXPECT_EQ(view.GetHistoryLength(1), 8);
 
     // And even rolling epoch 1 back a bit
-    // view.PopHistoryNode(1);
-    // EXPECT_EQ(view.GetHistoryLength(1), 7);
-
+    view.PopHistoryNode(1);
+    EXPECT_EQ(view.GetHistoryLength(1), 7);
 }

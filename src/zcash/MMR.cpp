@@ -27,9 +27,9 @@ void HistoryCache::Truncate(HistoryIndex newLength) {
     // imagine we rolled two blocks back and then put another 3 blocks on top 
     // of the rolled back state. In that case ` updateDepth` will be H-3, while length
     // will be H (where H is a final chain height after such operation). So we know that
-    // history entries in the range of H-3..H are expected to pushed into the database
+    // history entries in the range of H-3..H are expected to be pushed into the database
     // to replace/append to the persistent nodes there.
-    if (updateDepth < length) updateDepth = length;
+    if (updateDepth > length) updateDepth = length;
 }
 
 HistoryNode NewLeaf(
@@ -55,7 +55,7 @@ HistoryNode NewLeaf(
         shieldedTxCount
     );
 }
-
+    
 HistoryNode NewNode(
         uint256 subtreeCommitment,
         uint32_t startTime,

@@ -364,7 +364,7 @@ public:
     //! Get the current "tip" or the latest anchored tree root in the chain
     virtual uint256 GetBestAnchor(ShieldedType type) const;
 
-    //! Get the current chain history length (which should be rougly chain height x2)
+    //! Get the current chain history length (which should be roughly chain height x2)
     virtual HistoryIndex GetHistoryLength(uint32_t epochId) const;
 
     //! Get history node at specified index
@@ -609,7 +609,7 @@ private:
         Tree &tree
     );
 
-    //! Preload history tree for futher update. If extra passed, extra nodes for deletion also preloaded
+    //! Preload history tree for further update. If extra passed, extra nodes for deletion also preloaded
     //! Returns number of peaks, not total number of loaded nodes.
     uint32_t PreloadHistoryTree(uint32_t epochId, bool extra, std::vector<HistoryEntry> &entries, std::vector<uint32_t> &entry_indices);
 

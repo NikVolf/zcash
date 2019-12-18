@@ -131,7 +131,8 @@ uint256 CCoinsViewDB::GetBestAnchor(ShieldedType type) const {
 HistoryIndex CCoinsViewDB::GetHistoryLength(uint32_t epochId) const {
     HistoryIndex historyLength;
     if (!db.Read(make_pair(DB_MMR_LENGTH, epochId), historyLength)) {
-        throw runtime_error("History data not available - reindex?");
+        // Starting new history
+        historyLength = 0;
     }
 
     return historyLength;
@@ -201,7 +202,7 @@ void BatchWriteMMR(CDBBatch& batch, CHistoryCacheMap& historyCacheMap) {
         auto epochId = nextHistoryCache->first;
 
         // delete old entries since updateDepth
-        for (int i = historyCache.updateDepth; i < historyCache.length; i++) {
+        for (int i = historyCache.updateDepth + 1; i <= historyCache.length; i++) {
             batch.Erase(make_pair(make_pair(DB_MMR_NODE, epochId), i));
         }
 
