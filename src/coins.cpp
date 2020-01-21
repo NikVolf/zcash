@@ -342,16 +342,23 @@ uint32_t CCoinsViewCache::PreloadHistoryTree(uint32_t epochId, bool extra, std::
         entry_indices.push_back(0);
         return 1;
     } else {
+        // First possible peak is calculated above.
         h = floor_log2i(treeLength);
         peak_pos = (1 << (h + 1)) - 1;
 
+        // Collecting all peaks starting from first possible one.
         while (h != 0) {
+
+            // If peak_pos is out of bounds of the tree, left child of it calculated,
+            // and that means that we drop down one level in the tree.
             if (peak_pos > treeLength) {
                 // left child, -2^h
                 peak_pos = peak_pos - (1 << h);
                 h = h - 1;
             }
 
+            // If the peak exists, we take it and then continue with it's right sibling 
+            // (which may not exist and that will be covered in next iteration).
             if (peak_pos <= treeLength) {
                 draftMMRNode(entry_indices, entries, GetHistoryAt(epochId, peak_pos-1), h, peak_pos);
 
@@ -372,6 +379,21 @@ uint32_t CCoinsViewCache::PreloadHistoryTree(uint32_t epochId, bool extra, std::
     h = last_peak_h;
     peak_pos = last_peak_pos;
 
+
+    //           P
+    //          / \
+    //         /   \
+    //        / \   \
+    //       /    \  \
+    //    _A_      \   \
+    //   /   \_     B   \
+    //  / \   / \   / \  C
+    // /\ /\ /\ /\ /\ /\ /\
+    //                   D E
+    //
+    //
+    // For extra peaks needed for deletion, we do extra pass on right slope of the last peak
+    // and add those nodes + their siblings. Extra would be (D, E) for the picture above.
     while (h > 0) {
         uint32_t left_pos = peak_pos - (1<<h);
         uint32_t right_pos = peak_pos - 1;
