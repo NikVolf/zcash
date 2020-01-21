@@ -23,6 +23,9 @@ endif
 
 define $(package)_set_vars
 $(package)_build_opts=--release
+ifeq ($(LIBRUSTZCASH_OVERRIDE),)
+$(package)_build_opts+=--frozen
+endif
 ifneq ($(canonical_host),$(build))
 $(package)_build_opts+=--target=$($(package)_rust_target)
 endif
