@@ -163,4 +163,9 @@ TEST(MMR, EpochBoundaries) {
     // And even rolling epoch 1 back a bit
     view.PopHistoryNode(1);
     EXPECT_EQ(view.GetHistoryLength(1), 7);
+
+    // And also rolling epoch 2 back to 0
+    view.PopHistoryNode(2);
+    EXPECT_EQ(view.GetHistoryLength(2), 0);
+
 }

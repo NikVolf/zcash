@@ -420,7 +420,7 @@ HistoryCache& CCoinsViewCache::SelectHistoryCache(uint32_t epochId) const {
             base->GetHistoryLength(epochId),
             base->GetHistoryRoot(epochId),
             epochId
-        );;
+        );
 
         return historyCacheMap.find(epochId)->second;
     }   
@@ -436,7 +436,7 @@ void CCoinsViewCache::PushHistoryNode(uint32_t epochId, const HistoryNode node) 
         // special case, it just goes into the cache right away
         historyCache.Extend(node);
 
-        librustzcash_mmr_hash_node(epochId, node.begin(), historyCache.root.begin());
+        librustzcash_mmr_hash_node(epochId, node.data(), historyCache.root.begin());
 
         return;
     }
@@ -452,12 +452,12 @@ void CCoinsViewCache::PushHistoryNode(uint32_t epochId, const HistoryNode node) 
     uint32_t appends = librustzcash_mmr_append(
         epochId, 
         treeLength,
-        &entry_indices[0], 
-        entries.begin()->begin(),
+        entry_indices.data(), 
+        entries.data()->data(),
         entry_indices.size(),
-        node.begin(),
+        node.data(),
         newRoot.begin(),
-        appendBuf.begin()->begin()
+        appendBuf.data()->data()
     );
     
     for (size_t i = 0; i < appends; i++) {
@@ -486,7 +486,7 @@ void CCoinsViewCache::PopHistoryNode(uint32_t epochId) {
         uint256 newRoot;
         if (librustzcash_mmr_hash_node(
             epochId, 
-            libzcash::LeafToEntry(GetHistoryAt(epochId, 0)).begin(), 
+            libzcash::LeafToEntry(GetHistoryAt(epochId, 0)).data(), 
             newRoot.begin()
         ) == 0) {
             historyCache.root = newRoot;
@@ -505,8 +505,8 @@ void CCoinsViewCache::PopHistoryNode(uint32_t epochId) {
     uint32_t numberOfDeletes = librustzcash_mmr_delete(
         epochId, 
         treeLength,
-        &entry_indices[0], 
-        entries.begin()->begin(),
+        entry_indices.data(), 
+        entries.data()->data(),
         peak_count,
         entries.size() - peak_count,
         newRoot.begin()

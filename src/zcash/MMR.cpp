@@ -16,7 +16,7 @@ void HistoryCache::Extend(const HistoryNode &leaf) {
 }
 
 void HistoryCache::Truncate(HistoryIndex newLength) {
-    for (HistoryIndex idx = length-1; idx >= newLength; idx--) {
+    for (HistoryIndex idx = length; idx > newLength; idx--) {
         appends.erase(idx);
     }
 
