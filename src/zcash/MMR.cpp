@@ -25,37 +25,13 @@ void HistoryCache::Truncate(HistoryIndex newLength) {
     // update everything starting from `updateDepth`
     // 
     // imagine we rolled two blocks back and then put another 3 blocks on top 
-    // of the rolled back state. In that case ` updateDepth` will be H-3, while length
+    // of the rolled back state. In that case `updateDepth` will be H-3, while length
     // will be H (where H is a final chain height after such operation). So we know that
     // history entries in the range of H-3..H are expected to be pushed into the database
     // to replace/append to the persistent nodes there.
     if (updateDepth > length) updateDepth = length;
 }
 
-HistoryNode NewLeaf(
-    uint256 commitment,
-    uint32_t time,
-    uint32_t target,
-    uint256 saplingRoot,
-    uint256 totalWork,
-    uint64_t height,
-    uint64_t shieldedTxCount
-) {
-    return NewNode(
-        commitment,
-        time,
-        time,
-        target,
-        target,
-        saplingRoot,
-        saplingRoot,
-        totalWork,
-        height,
-        height,
-        shieldedTxCount
-    );
-}
-    
 HistoryNode NewNode(
         uint256 subtreeCommitment,
         uint32_t startTime,
@@ -89,7 +65,31 @@ HistoryNode NewNode(
     return result;
 }
 
-HistoryEntry NewEntry(const HistoryNode node, uint32_t left, uint32_t right) {
+HistoryNode NewLeaf(
+    uint256 commitment,
+    uint32_t time,
+    uint32_t target,
+    uint256 saplingRoot,
+    uint256 totalWork,
+    uint64_t height,
+    uint64_t shieldedTxCount
+) {
+    return NewNode(
+        commitment,
+        time,
+        time,
+        target,
+        target,
+        saplingRoot,
+        saplingRoot,
+        totalWork,
+        height,
+        height,
+        shieldedTxCount
+    );
+}
+
+HistoryEntry NodeToEntry(const HistoryNode node, uint32_t left, uint32_t right) {
     CDataStream buf(SER_DISK, 0);
     HistoryEntry result;
 
@@ -104,7 +104,7 @@ HistoryEntry NewEntry(const HistoryNode node, uint32_t left, uint32_t right) {
     return result;
 }
 
-HistoryEntry NodeToEntry(const HistoryNode node) {
+HistoryEntry LeafToEntry(const HistoryNode node) {
     CDataStream buf(SER_DISK, 0);
     HistoryEntry result;
 

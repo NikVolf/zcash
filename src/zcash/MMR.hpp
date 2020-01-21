@@ -19,7 +19,7 @@ const int ENTRY_SERIALIZED_LENGTH = 180;
 typedef std::array<unsigned char, NODE_SERIALIZED_LENGTH> HistoryNode;
 typedef std::array<unsigned char, ENTRY_SERIALIZED_LENGTH> HistoryEntry;
 
-typedef long HistoryIndex;
+typedef uint64_t HistoryIndex;
 
 class HistoryCache {
 public:
@@ -47,21 +47,6 @@ public:
     void Truncate(HistoryIndex newLength);
 };
 
-// New history node with provided metadata in full.
-HistoryNode NewNode(
-    uint256 subtreeCommitment,
-    uint32_t startTime,
-    uint32_t endTime,
-    uint32_t startTarget,
-    uint32_t endTarget,
-    uint256 startSaplingRoot,
-    uint256 endSaplingRoot,
-    uint256 subtreeTotalWork,
-    uint64_t startHeight,
-    uint64_t endHeight,
-    uint64_t shieldedTxCount  
-);
-
 // New history node with metadata based on block state.
 HistoryNode NewLeaf(
     uint256 commitment,
@@ -74,10 +59,10 @@ HistoryNode NewLeaf(
 );
 
 // Convert history node to tree node (with children references)
-HistoryEntry NewEntry(const HistoryNode node, uint32_t left, uint32_t right);
+HistoryEntry NodeToEntry(const HistoryNode node, uint32_t left, uint32_t right);
 
 // Convert history node to leaf node (end nodes without children)
-HistoryEntry NodeToEntry(const HistoryNode node);
+HistoryEntry LeafToEntry(const HistoryNode node);
 
 }
 

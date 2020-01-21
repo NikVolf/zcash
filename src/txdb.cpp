@@ -145,7 +145,7 @@ HistoryNode CCoinsViewDB::GetHistoryAt(uint32_t epochId, HistoryIndex index) con
         throw runtime_error("History data inconsistent - reindex?");
     }
 
-    if (!db.Read(make_pair(make_pair(DB_MMR_NODE, epochId), index), mmrNode)) {
+    if (!db.Read(make_pair(DB_MMR_NODE, make_pair(epochId, index)), mmrNode)) {
         throw runtime_error("History data inconsistent (expected node not found) - reindex?");
     }
 
@@ -203,12 +203,12 @@ void BatchWriteMMR(CDBBatch& batch, CHistoryCacheMap& historyCacheMap) {
 
         // delete old entries since updateDepth
         for (int i = historyCache.updateDepth + 1; i <= historyCache.length; i++) {
-            batch.Erase(make_pair(make_pair(DB_MMR_NODE, epochId), i));
+            batch.Erase(make_pair(DB_MMR_NODE, make_pair(epochId, i)));
         }
 
         // replace/append new/updated entries
         for (auto it = historyCache.appends.begin(); it != historyCache.appends.end(); it++) {
-            batch.Write(make_pair(make_pair(DB_MMR_NODE, epochId), it->first), it->second);
+            batch.Write(make_pair(DB_MMR_NODE, make_pair(epochId, it->first)), it->second);
         }
 
         // write new length

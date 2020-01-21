@@ -609,10 +609,16 @@ private:
         Tree &tree
     );
 
-    //! Preload history tree for further update. If extra passed, extra nodes for deletion also preloaded
+    //! Preload history tree for further update. 
+    //! 
+    //! If extra passed = true, extra nodes for deletion also preloade.
+    //! This will allow to delete tail entries from preloaded tree without
+    //! any further database lookups.
+    //! 
     //! Returns number of peaks, not total number of loaded nodes.
     uint32_t PreloadHistoryTree(uint32_t epochId, bool extra, std::vector<HistoryEntry> &entries, std::vector<uint32_t> &entry_indices);
 
+    //! Selects history cache for specified epoch.
     HistoryCache& SelectHistoryCache(uint32_t epochId) const;
 };
 

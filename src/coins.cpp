@@ -207,7 +207,7 @@ HistoryNode CCoinsViewCache::GetHistoryAt(uint32_t epochId, HistoryIndex index) 
     HistoryCache& historyCache = SelectHistoryCache(epochId);
 
     if (index >= historyCache.length) {
-        // Caller should ensure that he is limiting history 
+        // Caller should ensure that it is limiting history 
         // request to 0..GetHistoryLength(epochId)-1 range
         throw std::runtime_error("Invalid history request");
     }
@@ -302,16 +302,26 @@ void draftMMRNode(std::vector<uint32_t> &indices,
                   uint32_t peak_pos) 
 {
     HistoryEntry newEntry = h == 0 
-        ? libzcash::NodeToEntry(nodeData) 
-        : libzcash::NewEntry(nodeData, peak_pos - (1 << h) - 1, peak_pos - 2);
+        ? libzcash::LeafToEntry(nodeData) 
+        // peak_pos - (1 << h) is the mmr position of left child, -1 to that is this position of entry in
+        // array representation.
+        //
+        // peak_pos - 1 is the mmr position of right child, -1 to that is this position of entry in
+        // array representation
+        : libzcash::NodeToEntry(nodeData, peak_pos - (1 << h) - 1, peak_pos - 2);
 
     indices.push_back(peak_pos - 1);
     entries.push_back(newEntry);
 }
 
-static inline int log2i(uint32_t x) {
+static inline uint32_t log2i(uint32_t x) {
     assert(x > 0);
     return 31 - __builtin_clz(x);
+}
+
+// Computes floor(log2(x+1))
+static inline uint32_t floor_log2i(uint32_t x) {
+    return log2i(x + 1) - 1;
 }
 
 uint32_t CCoinsViewCache::PreloadHistoryTree(uint32_t epochId, bool extra, std::vector<HistoryEntry> &entries, std::vector<uint32_t> &entry_indices) {
@@ -328,11 +338,11 @@ uint32_t CCoinsViewCache::PreloadHistoryTree(uint32_t epochId, bool extra, std::
     uint32_t total_peaks = 0;
 
     if (treeLength == 1) {
-        entries.push_back(libzcash::NodeToEntry(GetHistoryAt(epochId, 0)));
+        entries.push_back(libzcash::LeafToEntry(GetHistoryAt(epochId, 0)));
         entry_indices.push_back(0);
         return 1;
     } else {
-        h = log2i(treeLength + 1) - 1;
+        h = floor_log2i(treeLength);
         peak_pos = (1 << (h + 1)) - 1;
 
         while (h != 0) {
@@ -454,7 +464,7 @@ void CCoinsViewCache::PopHistoryNode(uint32_t epochId) {
         uint256 newRoot;
         if (librustzcash_mmr_hash_node(
             epochId, 
-            libzcash::NodeToEntry(GetHistoryAt(epochId, 0)).begin(), 
+            libzcash::LeafToEntry(GetHistoryAt(epochId, 0)).begin(), 
             newRoot.begin()
         ) == 0) {
             historyCache.root = newRoot;

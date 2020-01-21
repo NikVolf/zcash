@@ -2474,9 +2474,10 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
 
     auto consensusBranchId = CurrentEpochBranchId(pindex->nHeight, chainparams.GetConsensus());
 
-    // History read/write is unconditional, since it is generated for entire
-    // chain regardless of the Heartwood upgrade activation height.
-    view.PopHistoryNode(consensusBranchId);
+    // This should be replaced with proper condition on Heartwood activation
+    if (false) {
+        view.PopHistoryNode(consensusBranchId);
+    }
 
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
@@ -2883,9 +2884,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         }
     }
 
-    // History read/write is unconditional, since it is generated for entire
-    // chain regardless of the Heartwood upgrade activation height.
-    {
+    // History read/write is started with Heartwood update.
+    // Change the condition to run when network upgrade sapling  is active
+    // i.e.
+    // if (chainparams.GetConsensus().NetworkUpgradeActive(pindex->nHeight, Consensus::UPGRADE_HEARTWOOD))
+    if (false) {
         auto historyNode = libzcash::NewLeaf(
             block.GetHash(), 
             block.nTime, 
