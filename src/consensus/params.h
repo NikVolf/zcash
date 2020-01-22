@@ -27,6 +27,7 @@ enum UpgradeIndex : uint32_t {
     UPGRADE_OVERWINTER,
     UPGRADE_SAPLING,
     UPGRADE_BLOSSOM,
+    UPGRADE_HEARTWOOD,
     // NOTE: Also add new upgrades to NetworkUpgradeInfo in upgrades.cpp
     MAX_NETWORK_UPGRADES
 };
@@ -140,6 +141,8 @@ struct Params {
     int64_t AveragingWindowTimespan(int nHeight) const;
     int64_t MinActualTimespan(int nHeight) const;
     int64_t MaxActualTimespan(int nHeight) const;
+
+    int32_t MinBlockVersion(int nHeight) const;
 
     uint256 nMinimumChainWork;
 };
